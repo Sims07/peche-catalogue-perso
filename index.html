@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnet de pêche</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="banner">
+  <div class="banner__inner">
+    <h1 class="banner__title">Carnet de pêche</h1>
+    <p class="banner__subtitle">Journal des prises &mdash; poids, taille, lieu, date</p>
+  </div>
+  <button id="btn-settings" class="icon-btn" title="Connexion GitHub" aria-label="Réglages">⚙</button>
+</header>
+
+<main id="app" class="app">
+
+  <section id="setup-screen" class="setup hidden">
+    <div class="setup__card">
+      <h2>Connexion au dépôt GitHub</h2>
+      <p class="muted">Les prises sont enregistrées directement dans un fichier de ton dépôt GitHub, via un jeton personnel que toi seul détiens. Le jeton reste uniquement dans ce navigateur : il n'est jamais écrit dans le code du site.</p>
+      <form id="form-config">
+        <label>Propriétaire (owner)
+          <input type="text" id="cfg-owner" placeholder="Sims07" required>
+        </label>
+        <label>Dépôt (repo)
+          <input type="text" id="cfg-repo" placeholder="carnet-de-peche" required>
+        </label>
+        <label>Branche
+          <input type="text" id="cfg-branch" placeholder="main" value="main" required>
+        </label>
+        <label>Chemin du fichier de données
+          <input type="text" id="cfg-path" placeholder="data/prises.json" value="data/prises.json" required>
+        </label>
+        <label>Jeton personnel (fine-grained PAT)
+          <input type="password" id="cfg-token" placeholder="github_pat_..." required>
+        </label>
+        <p class="hint">Crée un <em>fine-grained personal access token</em> limité à ce seul dépôt, avec la permission « Contents: Read and write ». Settings → Developer settings → Personal access tokens → Fine-grained tokens.</p>
+        <button type="submit" class="btn btn--primary">Se connecter</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="main-screen" class="hidden">
+
+    <div id="banner-error" class="banner-error hidden"></div>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="entry-form card">
+      <h2>Nouvelle prise</h2>
+      <form id="form-catch">
+        <div class="grid">
+          <label>Date
+            <input type="date" id="f-date" required>
+          </label>
+          <label>Espèce
+            <input type="text" id="f-espece" value="Carpe">
+          </label>
+          <label>Poids (kg)
+            <input type="number" id="f-poids" step="0.01" min="0" placeholder="ex : 12.4">
+          </label>
+          <label>Taille (cm)
+            <input type="number" id="f-taille" step="0.1" min="0" placeholder="ex : 78">
+          </label>
+          <label class="span-2">Lieu
+            <input type="text" id="f-lieu" placeholder="ex : Étang de la Vallée">
+          </label>
+          <label class="span-2">Notes
+            <input type="text" id="f-notes" placeholder="conditions, appât, remarques...">
+          </label>
+          <label class="span-2">Photo
+            <input type="file" id="f-photo" accept="image/*">
+            <span id="photo-preview-wrap"></span>
+          </label>
+        </div>
+        <button type="submit" class="btn btn--primary" id="btn-submit">Enregistrer la prise</button>
+      </form>
+    </section>
+
+    <section class="ledger">
+      <div class="ledger__head">
+        <h2>Prises enregistrées</h2>
+        <label class="filter">
+          Trier par lieu
+          <select id="filter-lieu"><option value="">Tous les lieux</option></select>
+        </label>
+      </div>
+      <div id="ledger-list"></div>
+      <p id="empty-state" class="empty hidden">Aucune prise enregistrée pour le moment. La première entrée du carnet t'attend ci-dessus.</p>
+    </section>
+
+  </section>
+
+  <div id="loading" class="loading hidden">Synchronisation avec GitHub…</div>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
