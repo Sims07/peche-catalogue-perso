@@ -37,6 +37,9 @@ Le fichier `data/prises.json` grossit à chaque photo ajoutée. Les photos sont 
 
 ## Changelog
 
+### v1.2.0 — 2026-09-15
+- Les champs "Espèce" et "Lieu" du formulaire suggèrent désormais les valeurs déjà saisies dans les prises existantes (autocomplétion native du navigateur).
+
 ### v1.1.0 — 2026-09-15
 - Ajout d'un filtre par espèce, en plus du filtre par lieu.
 - Une prise peut être modifiée en cliquant dessus dans le carnet : le formulaire se pré-remplit (y compris la photo), avec un bouton pour annuler la modification.

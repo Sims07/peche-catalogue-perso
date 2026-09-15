@@ -255,10 +255,18 @@ function formatDate(iso) {
   return `${d}/${m}/${y}`;
 }
 
+function renderFormSuggestions() {
+  const especes = [...new Set(catches.map(c => c.espece).filter(Boolean))].sort();
+  const lieux = [...new Set(catches.map(c => c.lieu).filter(Boolean))].sort();
+  $('datalist-espece').innerHTML = especes.map(e => `<option value="${escapeHtml(e)}">`).join('');
+  $('datalist-lieu').innerHTML = lieux.map(l => `<option value="${escapeHtml(l)}">`).join('');
+}
+
 function renderAll() {
   renderStats();
   renderLieuFilter();
   renderEspeceFilter();
+  renderFormSuggestions();
   renderLedger();
 }
 

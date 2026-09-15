@@ -62,7 +62,8 @@
             <input type="date" id="f-date" required>
           </label>
           <label>Espèce
-            <input type="text" id="f-espece" value="Carpe">
+            <input type="text" id="f-espece" value="Carpe" list="datalist-espece">
+            <datalist id="datalist-espece"></datalist>
           </label>
           <label>Poids (kg)
             <input type="number" id="f-poids" step="0.01" min="0" placeholder="ex : 12.4">
@@ -71,7 +72,8 @@
             <input type="number" id="f-taille" step="0.1" min="0" placeholder="ex : 78">
           </label>
           <label class="span-2">Lieu
-            <input type="text" id="f-lieu" placeholder="ex : Étang de la Vallée">
+            <input type="text" id="f-lieu" placeholder="ex : Étang de la Vallée" list="datalist-lieu">
+            <datalist id="datalist-lieu"></datalist>
           </label>
           <label class="span-2">Notes
             <input type="text" id="f-notes" placeholder="conditions, appât, remarques...">
