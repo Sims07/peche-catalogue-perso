@@ -37,6 +37,10 @@ Le fichier `data/prises.json` grossit à chaque photo ajoutée. Les photos sont 
 
 ## Changelog
 
+### v1.1.0 — 2026-09-15
+- Ajout d'un filtre par espèce, en plus du filtre par lieu.
+- Une prise peut être modifiée en cliquant dessus dans le carnet : le formulaire se pré-remplit (y compris la photo), avec un bouton pour annuler la modification.
+
 ### v1.0.0 — 2026-09-15
 - Version initiale : formulaire d'ajout (date, espèce, poids, taille, lieu, notes, photo), liste des prises triée par date, filtre par lieu, statistiques simples (total, plus grosse prise, dernière sortie), suppression d'une prise.
 - Stockage via l'API Git Data de GitHub (blobs/trees/commits), sans limite de taille de fichier liée à l'API "contents" simple.

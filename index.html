@@ -54,7 +54,8 @@
     <section class="stats" id="stats"></section>
 
     <section class="entry-form card">
-      <h2>Nouvelle prise</h2>
+      <h2 id="entry-form-title">Nouvelle prise</h2>
+      <p id="edit-hint" class="muted hidden">Modification d'une prise existante — les champs sont pré-remplis.</p>
       <form id="form-catch">
         <div class="grid">
           <label>Date
@@ -80,17 +81,26 @@
             <span id="photo-preview-wrap"></span>
           </label>
         </div>
-        <button type="submit" class="btn btn--primary" id="btn-submit">Enregistrer la prise</button>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary" id="btn-submit">Enregistrer la prise</button>
+          <button type="button" class="btn btn--ghost hidden" id="btn-cancel-edit">Annuler la modification</button>
+        </div>
       </form>
     </section>
 
     <section class="ledger">
       <div class="ledger__head">
         <h2>Prises enregistrées</h2>
-        <label class="filter">
-          Trier par lieu
-          <select id="filter-lieu"><option value="">Tous les lieux</option></select>
-        </label>
+        <div class="ledger__filters">
+          <label class="filter">
+            Lieu
+            <select id="filter-lieu"><option value="">Tous les lieux</option></select>
+          </label>
+          <label class="filter">
+            Espèce
+            <select id="filter-espece"><option value="">Toutes les espèces</option></select>
+          </label>
+        </div>
       </div>
       <div id="ledger-list"></div>
       <p id="empty-state" class="empty hidden">Aucune prise enregistrée pour le moment. La première entrée du carnet t'attend ci-dessus.</p>

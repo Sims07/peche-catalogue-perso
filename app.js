@@ -11,6 +11,8 @@ const API = 'https://api.github.com';
 let config = null;
 let catches = [];
 let currentTreeCommitSha = null; // commit sha the in-memory data was read from
+let editingId = null; // id of the catch currently being edited, or null when adding
+let pendingPhoto = null;
 
 // ---------- Config ----------
 
@@ -205,6 +207,15 @@ function renderLieuFilter() {
   select.value = lieux.includes(current) ? current : '';
 }
 
+function renderEspeceFilter() {
+  const select = $('filter-espece');
+  const current = select.value;
+  const especes = [...new Set(catches.map(c => c.espece).filter(Boolean))].sort();
+  select.innerHTML = '<option value="">Toutes les espèces</option>' +
+    especes.map(e => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
+  select.value = especes.includes(current) ? current : '';
+}
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -212,10 +223,12 @@ function escapeHtml(str) {
 }
 
 function renderLedger() {
-  const filter = $('filter-lieu').value;
+  const lieuFilter = $('filter-lieu').value;
+  const especeFilter = $('filter-espece').value;
   const list = $('ledger-list');
   const sorted = [...catches]
-    .filter(c => !filter || c.lieu === filter)
+    .filter(c => !lieuFilter || c.lieu === lieuFilter)
+    .filter(c => !especeFilter || c.espece === especeFilter)
     .sort((a, b) => b.date.localeCompare(a.date) || (b.created_at || '').localeCompare(a.created_at || ''));
 
   $('empty-state').classList.toggle('hidden', catches.length > 0);
@@ -245,8 +258,52 @@ function formatDate(iso) {
 function renderAll() {
   renderStats();
   renderLieuFilter();
+  renderEspeceFilter();
   renderLedger();
 }
+
+// ---------- Edit mode ----------
+
+function enterEditMode(entry) {
+  editingId = entry.id;
+  $('f-date').value = entry.date || '';
+  $('f-espece').value = entry.espece || '';
+  $('f-poids').value = entry.poids_kg != null ? entry.poids_kg : '';
+  $('f-taille').value = entry.taille_cm != null ? entry.taille_cm : '';
+  $('f-lieu').value = entry.lieu || '';
+  $('f-notes').value = entry.notes || '';
+  $('f-photo').value = '';
+  pendingPhoto = entry.photo || null;
+
+  const wrap = $('photo-preview-wrap');
+  wrap.innerHTML = '';
+  if (pendingPhoto) {
+    const img = document.createElement('img');
+    img.src = pendingPhoto;
+    wrap.appendChild(img);
+  }
+
+  $('entry-form-title').textContent = 'Modifier la prise';
+  $('edit-hint').classList.remove('hidden');
+  $('btn-submit').textContent = 'Mettre à jour la prise';
+  $('btn-cancel-edit').classList.remove('hidden');
+  $('form-catch').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function exitEditMode() {
+  editingId = null;
+  pendingPhoto = null;
+  $('form-catch').reset();
+  $('f-date').valueAsDate = new Date();
+  $('f-espece').value = 'Carpe';
+  $('photo-preview-wrap').innerHTML = '';
+  $('entry-form-title').textContent = 'Nouvelle prise';
+  $('edit-hint').classList.add('hidden');
+  $('btn-submit').textContent = 'Enregistrer la prise';
+  $('btn-cancel-edit').classList.add('hidden');
+}
+
+$('btn-cancel-edit').addEventListener('click', exitEditMode);
 
 // ---------- App flow ----------
 
@@ -305,7 +362,6 @@ $('btn-settings').addEventListener('click', () => {
 });
 
 // Photo preview
-let pendingPhoto = null;
 $('f-photo').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   const wrap = $('photo-preview-wrap');
@@ -321,70 +377,87 @@ $('f-photo').addEventListener('change', async (e) => {
   }
 });
 
-// Add catch
+// Add or update a catch
 $('form-catch').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = $('btn-submit');
   btn.disabled = true;
   clearError();
 
-  const newEntry = {
-    id: crypto.randomUUID(),
+  const fields = {
     date: $('f-date').value,
     espece: $('f-espece').value.trim() || 'Carpe',
     poids_kg: $('f-poids').value ? parseFloat($('f-poids').value) : null,
     taille_cm: $('f-taille').value ? parseFloat($('f-taille').value) : null,
     lieu: $('f-lieu').value.trim(),
     notes: $('f-notes').value.trim(),
-    photo: pendingPhoto,
-    created_at: new Date().toISOString()
+    photo: pendingPhoto
   };
+
+  const isEdit = editingId !== null;
 
   try {
     setLoading(true);
     const latest = await fetchCatches(); // avoid overwriting concurrent changes
-    const updated = [...latest, newEntry];
-    await commitCatches(updated, `Ajout d'une prise du ${newEntry.date}`);
+    let updated, message;
+
+    if (isEdit) {
+      const existing = latest.find(c => c.id === editingId);
+      if (!existing) throw new Error("Cette prise n'existe plus (peut-être déjà supprimée ailleurs).");
+      const updatedEntry = { ...existing, ...fields, updated_at: new Date().toISOString() };
+      updated = latest.map(c => c.id === editingId ? updatedEntry : c);
+      message = `Modification d'une prise du ${fields.date}`;
+    } else {
+      const newEntry = { id: crypto.randomUUID(), ...fields, created_at: new Date().toISOString() };
+      updated = [...latest, newEntry];
+      message = `Ajout d'une prise du ${fields.date}`;
+    }
+
+    await commitCatches(updated, message);
     catches = updated;
     renderAll();
-    e.target.reset();
-    $('f-date').valueAsDate = new Date();
-    $('f-espece').value = 'Carpe';
-    $('photo-preview-wrap').innerHTML = '';
-    pendingPhoto = null;
+    exitEditMode();
   } catch (err) {
     console.error(err);
-    showError("L'enregistrement a échoué. Réessaie dans un instant. Détail : " + err.message);
+    showError((isEdit ? "La mise à jour a échoué." : "L'enregistrement a échoué.") + " Réessaie dans un instant. Détail : " + err.message);
   } finally {
     btn.disabled = false;
     setLoading(false);
   }
 });
 
-// Delete catch
+// Click on a ledger row: delete (✕ button) or select for editing
 $('ledger-list').addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-action="delete"]');
-  if (!btn) return;
-  const id = btn.closest('.entry').dataset.id;
+  const entryEl = e.target.closest('.entry');
+  if (!entryEl) return;
+  const id = entryEl.dataset.id;
   const entry = catches.find(c => c.id === id);
   if (!entry) return;
-  if (!confirm(`Supprimer la prise du ${formatDate(entry.date)} (${entry.espece || 'poisson'}) ?`)) return;
 
-  try {
-    setLoading(true);
-    const latest = await fetchCatches();
-    const updated = latest.filter(c => c.id !== id);
-    await commitCatches(updated, `Suppression d'une prise du ${entry.date}`);
-    catches = updated;
-    renderAll();
-  } catch (err) {
-    console.error(err);
-    showError("La suppression a échoué. Détail : " + err.message);
-  } finally {
-    setLoading(false);
+  const deleteBtn = e.target.closest('button[data-action="delete"]');
+  if (deleteBtn) {
+    if (!confirm(`Supprimer la prise du ${formatDate(entry.date)} (${entry.espece || 'poisson'}) ?`)) return;
+    try {
+      setLoading(true);
+      const latest = await fetchCatches();
+      const updated = latest.filter(c => c.id !== id);
+      await commitCatches(updated, `Suppression d'une prise du ${entry.date}`);
+      catches = updated;
+      if (editingId === id) exitEditMode();
+      renderAll();
+    } catch (err) {
+      console.error(err);
+      showError("La suppression a échoué. Détail : " + err.message);
+    } finally {
+      setLoading(false);
+    }
+    return;
   }
+
+  enterEditMode(entry);
 });
 
 $('filter-lieu').addEventListener('change', renderLedger);
+$('filter-espece').addEventListener('change', renderLedger);
 
 init();

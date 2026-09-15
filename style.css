@@ -160,10 +160,13 @@ form input:focus, form select:focus{
   display:flex;
   align-items:baseline;
   justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
   color: var(--paper);
   margin-bottom:10px;
 }
 .ledger__head h2{ font-size:1.25rem; }
+.ledger__filters{ display:flex; gap:14px; flex-wrap:wrap; }
 .filter{
   display:flex;
   align-items:center;
@@ -172,6 +175,11 @@ form input:focus, form select:focus{
   color: rgba(243,236,221,0.75);
 }
 .filter select{ padding:.3rem .4rem; font-size:.85rem; }
+
+.form-actions{ display:flex; align-items:center; gap:12px; }
+
+.entry{ cursor:pointer; }
+.entry:hover{ background:#ece2ca; }
 
 .entry{
   display:grid;
