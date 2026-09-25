@@ -4,9 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Carnet de pêche</title>
+<meta name="theme-color" content="#16302B">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Carnet pêche">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,7 +24,10 @@
     <h1 class="banner__title">Carnet de pêche</h1>
     <p class="banner__subtitle">Journal des prises &mdash; poids, taille, lieu, date</p>
   </div>
-  <button id="btn-settings" class="icon-btn" title="Connexion GitHub" aria-label="Réglages">⚙</button>
+  <div class="banner__actions">
+    <button id="btn-export" class="icon-btn" title="Exporter en PDF" aria-label="Exporter">⤓</button>
+    <button id="btn-settings" class="icon-btn" title="Connexion GitHub" aria-label="Réglages">⚙</button>
+  </div>
 </header>
 
 <main id="app" class="app">
@@ -81,6 +92,8 @@
           <label class="span-2">Photo
             <input type="file" id="f-photo" accept="image/*">
             <span id="photo-preview-wrap"></span>
+            <span id="gps-status" class="hint"></span>
+            <div id="form-map" class="mini-map hidden"></div>
           </label>
         </div>
         <div class="form-actions">
@@ -88,6 +101,12 @@
           <button type="button" class="btn btn--ghost hidden" id="btn-cancel-edit">Annuler la modification</button>
         </div>
       </form>
+    </section>
+
+    <section class="card map-section" id="map-section">
+      <h2>Carte des prises</h2>
+      <div id="catches-map" class="catches-map"></div>
+      <p id="map-empty" class="muted hidden">Aucune prise géolocalisée pour l'instant. Les photos qui contiennent une position GPS s'afficheront ici automatiquement.</p>
     </section>
 
     <section class="ledger">
@@ -114,6 +133,37 @@
 
 </main>
 
+<div id="lightbox-overlay" class="modal-overlay hidden">
+  <div class="lightbox-content">
+    <button id="lightbox-close" class="icon-btn lightbox-close" aria-label="Fermer">✕</button>
+    <img id="lightbox-img" src="" alt="Photo de la prise en grand">
+  </div>
+</div>
+
+<div id="export-overlay" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h2>Exporter le carnet</h2>
+    <p class="muted">Génère un support imprimable (PDF via l'impression du navigateur) reprenant les prises de la période choisie.</p>
+    <form id="form-export">
+      <label>Du
+        <input type="date" id="exp-from">
+      </label>
+      <label>Au
+        <input type="date" id="exp-to">
+      </label>
+      <p class="hint">Laisse les deux champs vides pour exporter toutes les prises.</p>
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Générer le PDF</button>
+        <button type="button" class="btn btn--ghost" id="btn-export-cancel">Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="print-book"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

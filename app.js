@@ -13,6 +13,7 @@ let catches = [];
 let currentTreeCommitSha = null; // commit sha the in-memory data was read from
 let editingId = null; // id of the catch currently being edited, or null when adding
 let pendingPhoto = null;
+let pendingGPS = null; // {lat, lon} extracted from the current photo's EXIF, or null
 
 // ---------- Config ----------
 
@@ -134,6 +135,37 @@ async function commitCatches(newCatches, message) {
   currentTreeCommitSha = newCommit.sha;
 }
 
+// ---------- GPS extraction from photo EXIF ----------
+
+function dmsToDecimal(dms, ref) {
+  if (!dms || dms.length < 3) return null;
+  const [deg, min, sec] = dms;
+  let decimal = deg + min / 60 + sec / 3600;
+  if (ref === 'S' || ref === 'W') decimal *= -1;
+  return decimal;
+}
+
+function extractGPS(file) {
+  return new Promise((resolve) => {
+    if (typeof EXIF === 'undefined') { resolve(null); return; }
+    try {
+      EXIF.getData(file, function () {
+        const lat = EXIF.getTag(this, 'GPSLatitude');
+        const latRef = EXIF.getTag(this, 'GPSLatitudeRef');
+        const lon = EXIF.getTag(this, 'GPSLongitude');
+        const lonRef = EXIF.getTag(this, 'GPSLongitudeRef');
+        if (!lat || !lon) { resolve(null); return; }
+        const latitude = dmsToDecimal(lat, latRef);
+        const longitude = dmsToDecimal(lon, lonRef);
+        if (latitude == null || longitude == null) { resolve(null); return; }
+        resolve({ lat: latitude, lon: longitude });
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 // ---------- Image compression ----------
 
 function compressImage(file, maxDim = 900, quality = 0.65) {
@@ -239,7 +271,7 @@ function renderLedger() {
         : `<div class="entry__thumb entry__thumb--empty">🎣</div>`}
       <div class="entry__main">
         <div class="entry__title">${escapeHtml(c.espece || 'Poisson')}${c.poids_kg != null ? ` · ${c.poids_kg} kg` : ''}${c.taille_cm != null ? ` · ${c.taille_cm} cm` : ''}</div>
-        <div class="entry__meta">${formatDate(c.date)}${c.lieu ? ' · ' + escapeHtml(c.lieu) : ''}</div>
+        <div class="entry__meta">${formatDate(c.date)}${c.lieu ? ' · ' + escapeHtml(c.lieu) : ''}${c.gps ? ' · 📍 GPS' : ''}</div>
         ${c.notes ? `<div class="entry__notes">${escapeHtml(c.notes)}</div>` : ''}
       </div>
       <div class="entry__actions">
@@ -268,6 +300,66 @@ function renderAll() {
   renderEspeceFilter();
   renderFormSuggestions();
   renderLedger();
+  renderCatchesMap();
+}
+
+// ---------- Maps ----------
+
+let formMap = null;
+let formMarker = null;
+
+function showFormMap(lat, lon) {
+  const container = $('form-map');
+  container.classList.remove('hidden');
+  if (!formMap) {
+    formMap = L.map(container).setView([lat, lon], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(formMap);
+    formMarker = L.marker([lat, lon]).addTo(formMap);
+  } else {
+    formMap.setView([lat, lon], 13);
+    formMarker.setLatLng([lat, lon]);
+  }
+  setTimeout(() => formMap.invalidateSize(), 50);
+}
+
+function hideFormMap() {
+  $('form-map').classList.add('hidden');
+}
+
+let catchesMap = null;
+let catchesMarkersLayer = null;
+
+function renderCatchesMap() {
+  const withGps = catches.filter(c => c.gps && c.gps.lat != null && c.gps.lon != null);
+  $('map-empty').classList.toggle('hidden', withGps.length > 0);
+  $('catches-map').classList.toggle('hidden', withGps.length === 0);
+  if (withGps.length === 0) return;
+
+  if (!catchesMap) {
+    catchesMap = L.map('catches-map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(catchesMap);
+    catchesMarkersLayer = L.layerGroup().addTo(catchesMap);
+  }
+  catchesMarkersLayer.clearLayers();
+
+  const bounds = [];
+  withGps.forEach(c => {
+    const marker = L.marker([c.gps.lat, c.gps.lon]);
+    marker.bindPopup(`<strong>${escapeHtml(c.espece || 'Poisson')}</strong><br>${formatDate(c.date)}${c.lieu ? ' · ' + escapeHtml(c.lieu) : ''}`);
+    marker.addTo(catchesMarkersLayer);
+    bounds.push([c.gps.lat, c.gps.lon]);
+  });
+
+  if (bounds.length === 1) {
+    catchesMap.setView(bounds[0], 12);
+  } else {
+    catchesMap.fitBounds(bounds, { padding: [24, 24] });
+  }
+  setTimeout(() => catchesMap.invalidateSize(), 50);
 }
 
 // ---------- Edit mode ----------
@@ -282,6 +374,7 @@ function enterEditMode(entry) {
   $('f-notes').value = entry.notes || '';
   $('f-photo').value = '';
   pendingPhoto = entry.photo || null;
+  pendingGPS = entry.gps || null;
 
   const wrap = $('photo-preview-wrap');
   wrap.innerHTML = '';
@@ -289,6 +382,15 @@ function enterEditMode(entry) {
     const img = document.createElement('img');
     img.src = pendingPhoto;
     wrap.appendChild(img);
+  }
+
+  const status = $('gps-status');
+  if (pendingGPS) {
+    status.textContent = `📍 Position GPS enregistrée : ${pendingGPS.lat.toFixed(5)}, ${pendingGPS.lon.toFixed(5)}`;
+    showFormMap(pendingGPS.lat, pendingGPS.lon);
+  } else {
+    status.textContent = pendingPhoto ? "Aucune position GPS pour cette photo." : '';
+    hideFormMap();
   }
 
   $('entry-form-title').textContent = 'Modifier la prise';
@@ -301,10 +403,13 @@ function enterEditMode(entry) {
 function exitEditMode() {
   editingId = null;
   pendingPhoto = null;
+  pendingGPS = null;
   $('form-catch').reset();
   $('f-date').valueAsDate = new Date();
   $('f-espece').value = 'Carpe';
   $('photo-preview-wrap').innerHTML = '';
+  $('gps-status').textContent = '';
+  hideFormMap();
   $('entry-form-title').textContent = 'Nouvelle prise';
   $('edit-hint').classList.add('hidden');
   $('btn-submit').textContent = 'Enregistrer la prise';
@@ -373,13 +478,25 @@ $('btn-settings').addEventListener('click', () => {
 $('f-photo').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   const wrap = $('photo-preview-wrap');
+  const status = $('gps-status');
   wrap.innerHTML = '';
+  status.textContent = '';
+  pendingGPS = null;
+  hideFormMap();
   if (!file) { pendingPhoto = null; return; }
   try {
     pendingPhoto = await compressImage(file);
     const img = document.createElement('img');
     img.src = pendingPhoto;
     wrap.appendChild(img);
+
+    pendingGPS = await extractGPS(file);
+    if (pendingGPS) {
+      status.textContent = `📍 Position GPS détectée : ${pendingGPS.lat.toFixed(5)}, ${pendingGPS.lon.toFixed(5)}`;
+      showFormMap(pendingGPS.lat, pendingGPS.lon);
+    } else {
+      status.textContent = "Aucune position GPS trouvée dans cette photo.";
+    }
   } catch (err) {
     showError("Impossible de traiter la photo : " + err.message);
   }
@@ -399,7 +516,8 @@ $('form-catch').addEventListener('submit', async (e) => {
     taille_cm: $('f-taille').value ? parseFloat($('f-taille').value) : null,
     lieu: $('f-lieu').value.trim(),
     notes: $('f-notes').value.trim(),
-    photo: pendingPhoto
+    photo: pendingPhoto,
+    gps: pendingGPS
   };
 
   const isEdit = editingId !== null;
@@ -434,8 +552,32 @@ $('form-catch').addEventListener('submit', async (e) => {
   }
 });
 
-// Click on a ledger row: delete (✕ button) or select for editing
+// ---------- Photo lightbox ----------
+
+function openLightbox(src) {
+  $('lightbox-img').src = src;
+  $('lightbox-overlay').classList.remove('hidden');
+}
+function closeLightbox() {
+  $('lightbox-overlay').classList.add('hidden');
+  $('lightbox-img').src = '';
+}
+$('lightbox-close').addEventListener('click', closeLightbox);
+$('lightbox-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'lightbox-overlay') closeLightbox();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('lightbox-overlay').classList.contains('hidden')) closeLightbox();
+});
+
+// Click on a ledger row: view photo, delete (✕ button), or select for editing
 $('ledger-list').addEventListener('click', async (e) => {
+  const photoThumb = e.target.closest('img.entry__thumb');
+  if (photoThumb) {
+    openLightbox(photoThumb.src);
+    return;
+  }
+
   const entryEl = e.target.closest('.entry');
   if (!entryEl) return;
   const id = entryEl.dataset.id;
@@ -468,4 +610,102 @@ $('ledger-list').addEventListener('click', async (e) => {
 $('filter-lieu').addEventListener('change', renderLedger);
 $('filter-espece').addEventListener('change', renderLedger);
 
+// ---------- Export (print / save as PDF) ----------
+
+$('btn-export').addEventListener('click', () => {
+  $('exp-from').value = '';
+  $('exp-to').value = '';
+  $('export-overlay').classList.remove('hidden');
+});
+$('btn-export-cancel').addEventListener('click', () => {
+  $('export-overlay').classList.add('hidden');
+});
+
+$('form-export').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const from = $('exp-from').value;
+  const to = $('exp-to').value;
+  $('export-overlay').classList.add('hidden');
+  generatePrintBook(from, to);
+});
+
+function generatePrintBook(from, to) {
+  const filtered = catches
+    .filter(c => (!from || c.date >= from) && (!to || c.date <= to))
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.created_at || '').localeCompare(b.created_at || ''));
+
+  const periodLabel = (from || to)
+    ? `Du ${from ? formatDate(from) : '…'} au ${to ? formatDate(to) : '…'}`
+    : 'Toutes les prises';
+
+  const withWeight = filtered.filter(c => c.poids_kg != null);
+  const biggest = withWeight.length ? Math.max(...withWeight.map(c => c.poids_kg)).toFixed(2) : null;
+
+  const runningHead = (right) => `
+    <div class="print-running-head"><span>🎣 Carnet de pêche</span><span>${right}</span></div>
+  `;
+
+  const coverHtml = `
+    <section class="print-page print-cover">
+      ${runningHead(periodLabel)}
+      <div class="print-cover__mark">🐟</div>
+      <h1>Carnet de pêche</h1>
+      <p class="print-period">${escapeHtml(periodLabel)}</p>
+      <div class="print-cover__rule"></div>
+      <p class="print-stats">${filtered.length} prise${filtered.length > 1 ? 's' : ''}${biggest ? ` · plus grosse prise : ${biggest} kg` : ''}</p>
+    </section>
+  `;
+
+  const friezeHtml = `
+    <section class="print-page print-frieze">
+      ${runningHead('Frise chronologique')}
+      <h2>En un coup d'œil</h2>
+      <p class="print-frieze__intro">Toutes les prises de la période, dans l'ordre</p>
+      <div class="print-frieze__grid">
+        ${filtered.map(c => `
+          <div class="print-frieze__item">
+            ${c.photo
+              ? `<img class="print-frieze__thumb" src="${c.photo}" alt="">`
+              : `<div class="print-frieze__thumb--empty">🎣</div>`}
+            <div class="print-frieze__date">${formatDate(c.date)}</div>
+            <div class="print-frieze__espece">${escapeHtml(c.espece || '')}</div>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+
+  const entriesHtml = filtered.map((c, i) => `
+    <section class="print-page print-entry">
+      ${runningHead(`Prise n° ${i + 1} / ${filtered.length}`)}
+      ${c.photo ? `<div class="print-entry__photo-wrap"><img class="print-entry__photo" src="${c.photo}" alt=""></div>` : ''}
+      <h2 class="print-entry__title">${escapeHtml(c.espece || 'Poisson')}</h2>
+      <table class="print-entry__table">
+        <tr><td>Date</td><td>${formatDate(c.date)}</td></tr>
+        ${c.poids_kg != null ? `<tr><td>Poids</td><td>${c.poids_kg} kg</td></tr>` : ''}
+        ${c.taille_cm != null ? `<tr><td>Taille</td><td>${c.taille_cm} cm</td></tr>` : ''}
+        ${c.lieu ? `<tr><td>Lieu</td><td>${escapeHtml(c.lieu)}</td></tr>` : ''}
+        ${c.gps ? `<tr><td>Position</td><td>${c.gps.lat.toFixed(5)}, ${c.gps.lon.toFixed(5)}</td></tr>` : ''}
+        ${c.notes ? `<tr><td>Notes</td><td>${escapeHtml(c.notes)}</td></tr>` : ''}
+      </table>
+    </section>
+  `).join('');
+
+  const emptyHtml = filtered.length === 0
+    ? `<section class="print-page print-entry"><p>Aucune prise sur cette période.</p></section>`
+    : '';
+
+  $('print-book').innerHTML = coverHtml + (filtered.length ? friezeHtml : '') + entriesHtml + emptyHtml;
+  setTimeout(() => window.print(), 150);
+}
+
 init();
+
+// ---------- PWA: service worker registration ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {
+      // Not critical: the app still works fully online without it.
+    });
+  });
+}
