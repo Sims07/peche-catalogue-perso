@@ -93,6 +93,7 @@ form label{
   font-size:.85rem;
   color: var(--muted);
   margin-bottom: .9rem;
+  min-width:0;
 }
 form input, form select{
   font-family:"IBM Plex Sans", sans-serif;
@@ -102,6 +103,13 @@ form input, form select{
   border:1px solid var(--paper-line);
   border-radius:3px;
   padding:.5rem .6rem;
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+}
+input[type="file"]{
+  padding:.4rem .3rem;
+  font-size:.85rem;
 }
 form input:focus, form select:focus{
   outline:2px solid var(--teal);
@@ -143,12 +151,28 @@ form input:focus, form select:focus{
 .entry-form{ margin-bottom: 26px; }
 .entry-form h2{ font-size:1.25rem; margin-bottom:1rem; }
 
+.form-group{ margin-bottom: 6px; }
+.form-group + .form-group{
+  border-top: 1px solid var(--paper-line);
+  padding-top: 14px;
+  margin-top: 8px;
+}
+.form-group__title{
+  font-size:.7rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color: var(--brass-dark);
+  margin: 0 0 10px;
+}
+
 .grid{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap: 0 16px;
+  min-width:0;
 }
-.span-2{ grid-column: span 2; }
+.span-2{ grid-column: span 2; min-width:0; }
 
 #photo-preview-wrap img{
   margin-top:8px;

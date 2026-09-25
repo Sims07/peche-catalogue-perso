@@ -68,34 +68,56 @@
       <h2 id="entry-form-title">Nouvelle prise</h2>
       <p id="edit-hint" class="muted hidden">Modification d'une prise existante — les champs sont pré-remplis.</p>
       <form id="form-catch">
-        <div class="grid">
-          <label>Date
-            <input type="date" id="f-date" required>
-          </label>
-          <label>Espèce
-            <input type="text" id="f-espece" value="Carpe" list="datalist-espece">
-            <datalist id="datalist-espece"></datalist>
-          </label>
-          <label>Poids (kg)
-            <input type="number" id="f-poids" step="0.01" min="0" placeholder="ex : 12.4">
-          </label>
-          <label>Taille (cm)
-            <input type="number" id="f-taille" step="0.1" min="0" placeholder="ex : 78">
-          </label>
-          <label class="span-2">Lieu
-            <input type="text" id="f-lieu" placeholder="ex : Étang de la Vallée" list="datalist-lieu">
-            <datalist id="datalist-lieu"></datalist>
-          </label>
-          <label class="span-2">Notes
-            <input type="text" id="f-notes" placeholder="conditions, appât, remarques...">
-          </label>
-          <label class="span-2">Photo
-            <input type="file" id="f-photo" accept="image/*">
-            <span id="photo-preview-wrap"></span>
-            <span id="gps-status" class="hint"></span>
-            <div id="form-map" class="mini-map hidden"></div>
-          </label>
+        <div class="form-group">
+          <h3 class="form-group__title">Identification</h3>
+          <div class="grid">
+            <label>Date
+              <input type="date" id="f-date" required>
+            </label>
+            <label>Espèce
+              <input type="text" id="f-espece" value="Carpe" list="datalist-espece">
+              <datalist id="datalist-espece"></datalist>
+            </label>
+          </div>
         </div>
+
+        <div class="form-group">
+          <h3 class="form-group__title">Mesures</h3>
+          <div class="grid">
+            <label>Poids (kg)
+              <input type="number" id="f-poids" step="0.01" min="0" placeholder="ex : 12.4">
+            </label>
+            <label>Taille (cm)
+              <input type="number" id="f-taille" step="0.1" min="0" placeholder="ex : 78">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <h3 class="form-group__title">Lieu &amp; conditions</h3>
+          <div class="grid">
+            <label class="span-2">Lieu
+              <input type="text" id="f-lieu" placeholder="ex : Étang de la Vallée" list="datalist-lieu">
+              <datalist id="datalist-lieu"></datalist>
+            </label>
+            <label class="span-2">Notes
+              <input type="text" id="f-notes" placeholder="conditions, appât, remarques...">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <h3 class="form-group__title">Photo</h3>
+          <div class="grid">
+            <label class="span-2">Photo
+              <input type="file" id="f-photo" accept="image/*">
+              <span id="photo-preview-wrap"></span>
+              <span id="gps-status" class="hint"></span>
+              <div id="form-map" class="mini-map hidden"></div>
+            </label>
+          </div>
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn btn--primary" id="btn-submit">Enregistrer la prise</button>
           <button type="button" class="btn btn--ghost hidden" id="btn-cancel-edit">Annuler la modification</button>

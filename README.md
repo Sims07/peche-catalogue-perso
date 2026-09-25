@@ -54,6 +54,10 @@ L'application est une PWA (Progressive Web App) : sur iPhone, tu peux l'ajouter 
 
 ## Changelog
 
+### v1.8.0 — 2026-09-15
+- Correction d'un bug d'affichage sur iPhone : les champs du formulaire (notamment le champ photo) pouvaient dépasser du cadre et provoquer un défilement horizontal indésirable. Les champs occupent maintenant toujours toute la largeur disponible.
+- Le formulaire "Nouvelle prise" est désormais organisé en sections : **Identification** (date, espèce), **Mesures** (poids, taille), **Lieu & conditions** (lieu, notes), **Photo**.
+
 ### v1.7.0 — 2026-09-15
 - Cliquer sur la miniature d'une prise ouvre désormais un visualiseur plein écran (popup) pour voir la photo en grand — sans déclencher l'édition de la prise. Fermeture via le bouton ✕, un clic en dehors de l'image, ou la touche Échap.
 
