@@ -6,7 +6,7 @@
 // IMPORTANT: bump CACHE_NAME every time you deploy a change to index.html,
 // style.css, app.js or the icons — otherwise an already-installed iPhone
 // icon may keep showing the old cached version for a while.
-const CACHE_NAME = 'carnet-peche-v5';
+const CACHE_NAME = 'carnet-peche-v6';
 
 const APP_SHELL = [
   './',
