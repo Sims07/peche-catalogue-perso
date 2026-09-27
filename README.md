@@ -54,6 +54,12 @@ L'application est une PWA (Progressive Web App) : sur iPhone, tu peux l'ajouter 
 
 ## Changelog
 
+### v1.8.2 — 2026-09-15
+- Correction : sur iPhone (iOS en mode sombre), l'export imprimé/PDF pouvait s'afficher avec un fond noir au lieu du fond papier. En cause : le moteur de rendu d'impression d'iOS applique parfois son propre habillage sombre si la page ne précise pas explicitement qu'elle gère ses couleurs elle-même. Le thème clair est désormais forcé (`color-scheme: light`) sur toute la page et renforcé sur les éléments imprimés.
+
+### v1.8.1 — 2026-09-15
+- Correction : la carte Leaflet (contrôles de zoom notamment) passait par-dessus le visualiseur de photo et les autres fenêtres, car Leaflet utilise un z-index de 1000 en interne, plus élevé que celui de nos fenêtres. Les fenêtres (photo, export, réglages) passent maintenant systématiquement au-dessus.
+
 ### v1.8.0 — 2026-09-15
 - Correction d'un bug d'affichage sur iPhone : les champs du formulaire (notamment le champ photo) pouvaient dépasser du cadre et provoquer un défilement horizontal indésirable. Les champs occupent maintenant toujours toute la largeur disponible.
 - Le formulaire "Nouvelle prise" est désormais organisé en sections : **Identification** (date, espèce), **Mesures** (poids, taille), **Lieu & conditions** (lieu, notes), **Photo**.
