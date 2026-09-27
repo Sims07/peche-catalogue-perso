@@ -9,6 +9,7 @@
   --teal: #3E6B63;
   --rust: #8C4A3B;
   --muted: #6B6552;
+  color-scheme: light;
   font-size: 16px;
 }
 
@@ -341,25 +342,36 @@ form input:focus, form select:focus{
 
 @media print{
   body > *:not(#print-book){ display:none !important; }
-  html, body{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body{
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+    color-scheme: light;
+  }
   #print-book{
     display:block;
-    background: var(--paper);
+    background: var(--paper) !important;
     color: var(--ink);
     font-family:"IBM Plex Sans", sans-serif;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    color-adjust: exact;
+    color-scheme: light;
   }
   @page{ margin: 1.6cm; }
 
   .print-page{
     position:relative;
     page-break-after: always;
-    background: var(--paper);
+    background: var(--paper) !important;
     border: 1.5px solid var(--brass);
     border-radius: 6px;
     padding: 18px 26px 26px;
     min-height: 24cm;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+    color-scheme: light;
   }
   .print-page:last-child{ page-break-after: avoid; }
 
