@@ -6,7 +6,7 @@
 // IMPORTANT: bump CACHE_NAME every time you deploy a change to index.html,
 // style.css, app.js or the icons — otherwise an already-installed iPhone
 // icon may keep showing the old cached version for a while.
-const CACHE_NAME = 'carnet-peche-v9';
+const CACHE_NAME = 'carnet-peche-v8';
 
 const APP_SHELL = [
   './',
@@ -23,7 +23,12 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
-  self.skipWaiting();
+  // Pas de skipWaiting automatique : la nouvelle version attend que l'utilisateur
+  // appuie sur "Mettre à jour" dans l'appli (message SKIP_WAITING ci-dessous).
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

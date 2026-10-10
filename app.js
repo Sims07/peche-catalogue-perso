@@ -738,11 +738,69 @@ function generatePrintBook(from, to) {
 
 init();
 
-// ---------- PWA: service worker registration ----------
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {
-      // Not critical: the app still works fully online without it.
+// ---------- PWA: service worker + explicit update ----------
+// Une nouvelle version du site est détectée quand sw.js change (voir CACHE_NAME).
+// Le nouveau service worker reste en attente : il ne prend la main que lorsque
+// l'utilisateur appuie sur "Mettre à jour" (message SKIP_WAITING), puis la page se recharge.
+
+let swRegistration = null;
+let updateRequested = false;
+
+function showUpdateBar() {
+  $('update-bar').classList.remove('hidden');
+}
+
+function watchForUpdate(reg) {
+  // Cas 1 : une version est déjà installée et en attente.
+  if (reg.waiting && navigator.serviceWorker.controller) showUpdateBar();
+  // Cas 2 : une version est téléchargée pendant que l'appli est ouverte.
+  reg.addEventListener('updatefound', () => {
+    const incoming = reg.installing;
+    if (!incoming) return;
+    incoming.addEventListener('statechange', () => {
+      // Pas de barre à la toute première installation (aucun contrôleur encore).
+      if (incoming.state === 'installed' && navigator.serviceWorker.controller) showUpdateBar();
     });
   });
 }
+
+function checkForUpdate() {
+  if (swRegistration) swRegistration.update().catch(() => {});
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then((reg) => {
+        swRegistration = reg;
+        watchForUpdate(reg);
+        checkForUpdate();
+      })
+      .catch(() => {
+        // Not critical: the app still works fully online without it.
+      });
+  });
+
+  // Revérifie quand l'appli revient au premier plan (cas typique d'une PWA iPhone) puis toutes les heures.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checkForUpdate();
+  });
+  setInterval(checkForUpdate, 60 * 60 * 1000);
+
+  // Rechargement uniquement si l'utilisateur a demandé la mise à jour (pas à la 1re installation).
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (updateRequested) window.location.reload();
+  });
+}
+
+$('btn-update').addEventListener('click', () => {
+  if ((editingId !== null || pendingPhoto) &&
+      !confirm("Le formulaire en cours sera perdu. Mettre à jour maintenant ?")) return;
+  updateRequested = true;
+  const waiting = swRegistration && swRegistration.waiting;
+  if (waiting) {
+    waiting.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    window.location.reload();
+  }
+});

@@ -44,7 +44,7 @@ L'application est une PWA (Progressive Web App) : sur iPhone, tu peux l'ajouter 
 3. Choisis "Sur l'écran d'accueil".
 4. Confirme : l'icône du carnet apparaît sur ton écran d'accueil, avec le nom "Carnet pêche".
 
-⚠️ **Après chaque mise à jour du site** (nouveaux fichiers déposés sur GitHub), pense à changer la valeur de `CACHE_NAME` en haut de `sw.js` (ex. `carnet-peche-v2`). Sans ça, l'appli installée sur l'iPhone peut continuer à afficher une version mise en cache un moment avant de se mettre à jour.
+⚠️ **Après chaque mise à jour du site** (nouveaux fichiers déposés sur GitHub), pense à changer la valeur de `CACHE_NAME` en haut de `sw.js` (ex. `carnet-peche-v2`). C'est ce changement qui permet à l'appli installée de détecter la nouvelle version et d'afficher le bandeau « Mettre à jour ». Sans ça, l'appli peut continuer à afficher une version mise en cache.
 
 ## Fichiers du projet
 
@@ -53,6 +53,11 @@ L'application est une PWA (Progressive Web App) : sur iPhone, tu peux l'ajouter 
 - `data/prises.json` — créé automatiquement au premier enregistrement, contient toutes les prises
 
 ## Changelog
+
+### v1.10.0 — 2026-10-10
+- Nouveau bandeau « Une nouvelle version est disponible » avec un bouton **Mettre à jour**, affiché sous la barre de navigation quand une version plus récente du site est détectée. Un appui installe la nouvelle version et recharge l'appli.
+- La vérification se fait au lancement, quand l'appli revient au premier plan, puis toutes les heures. Si un formulaire est en cours de saisie, une confirmation est demandée avant le rechargement.
+- Le service worker n'active plus les nouvelles versions tout seul (suppression du `skipWaiting` automatique). `CACHE_NAME` passé à `carnet-peche-v8`.
 
 ### v1.9.0 — 2026-10-10
 - Refonte visuelle complète inspirée du design system Linear : thème sombre unique (fond `#010102`, échelle de surfaces, bordures fines), accent lavande `#5e6ad2` réservé à la marque, au bouton principal et au focus, typographie SF Pro / Inter, coins 8 px (boutons, champs), 12 px (cartes), pastilles arrondies pour les états.
