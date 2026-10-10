@@ -2,10 +2,10 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Carnet de pêche</title>
-<meta name="theme-color" content="#16302B">
-<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#010102">
+<meta name="color-scheme" content="dark">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -14,20 +14,18 @@
 <meta name="apple-mobile-web-app-title" content="Carnet pêche">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header class="banner">
-  <div class="banner__inner">
-    <h1 class="banner__title">Carnet de pêche</h1>
-    <p class="banner__subtitle">Journal des prises &mdash; poids, taille, lieu, date</p>
-  </div>
-  <div class="banner__actions">
-    <button id="btn-export" class="icon-btn" title="Exporter en PDF" aria-label="Exporter">⤓</button>
-    <button id="btn-settings" class="icon-btn" title="Connexion GitHub" aria-label="Réglages">⚙</button>
+<header class="topnav">
+  <h1 class="topnav__brand"><i class="ph ph-fish topnav__mark" aria-hidden="true"></i>Carnet de pêche</h1>
+  <div class="topnav__actions">
+    <button id="btn-export" class="icon-btn" title="Exporter en PDF" aria-label="Exporter en PDF"><i class="ph ph-download-simple"></i></button>
+    <button id="btn-settings" class="icon-btn" title="Connexion GitHub" aria-label="Connexion GitHub"><i class="ph ph-gear-six"></i></button>
   </div>
 </header>
 
@@ -39,10 +37,10 @@
       <p class="muted">Les prises sont enregistrées directement dans un fichier de ton dépôt GitHub, via un jeton personnel que toi seul détiens. Le jeton reste uniquement dans ce navigateur : il n'est jamais écrit dans le code du site.</p>
       <form id="form-config">
         <label>Propriétaire (owner)
-          <input type="text" id="cfg-owner" placeholder="Sims07" required>
+          <input type="text" id="cfg-owner" placeholder="nom-utilisateur-github" required>
         </label>
         <label>Dépôt (repo)
-          <input type="text" id="cfg-repo" placeholder="carnet-de-peche" required>
+          <input type="text" id="cfg-repo" placeholder="nom-du-depot" required>
         </label>
         <label>Branche
           <input type="text" id="cfg-branch" placeholder="main" value="main" required>
@@ -61,13 +59,16 @@
 
   <section id="main-screen" class="hidden">
 
-    <div id="banner-error" class="banner-error hidden"></div>
+    <div id="banner-error" class="banner-error hidden" role="alert">
+      <i class="ph ph-warning-circle" aria-hidden="true"></i>
+      <span id="banner-error-text"></span>
+    </div>
 
     <section class="stats" id="stats"></section>
 
     <section class="entry-form card">
       <h2 id="entry-form-title">Nouvelle prise</h2>
-      <p id="edit-hint" class="muted hidden">Modification d'une prise existante — les champs sont pré-remplis.</p>
+      <p id="edit-hint" class="muted hidden">Modification d'une prise existante. Les champs sont pré-remplis.</p>
       <form id="form-catch">
         <div class="form-group">
           <h3 class="form-group__title">Identification</h3>
@@ -86,16 +87,16 @@
           <h3 class="form-group__title">Mesures</h3>
           <div class="grid">
             <label>Poids (kg)
-              <input type="number" id="f-poids" step="0.01" min="0" placeholder="ex : 12.4">
+              <input type="number" id="f-poids" step="0.01" min="0" placeholder="ex : 12.4" inputmode="decimal">
             </label>
             <label>Taille (cm)
-              <input type="number" id="f-taille" step="0.1" min="0" placeholder="ex : 78">
+              <input type="number" id="f-taille" step="0.1" min="0" placeholder="ex : 78" inputmode="decimal">
             </label>
           </div>
         </div>
 
         <div class="form-group">
-          <h3 class="form-group__title">Lieu &amp; conditions</h3>
+          <h3 class="form-group__title">Lieu et conditions</h3>
           <div class="grid">
             <label class="span-2">Lieu
               <input type="text" id="f-lieu" placeholder="ex : Étang de la Vallée" list="datalist-lieu">
@@ -121,7 +122,7 @@
 
         <div class="form-actions">
           <button type="submit" class="btn btn--primary" id="btn-submit">Enregistrer la prise</button>
-          <button type="button" class="btn btn--ghost hidden" id="btn-cancel-edit">Annuler la modification</button>
+          <button type="button" class="btn btn--secondary hidden" id="btn-cancel-edit">Annuler la modification</button>
         </div>
       </form>
     </section>
@@ -146,19 +147,22 @@
           </label>
         </div>
       </div>
-      <div id="ledger-list"></div>
-      <p id="empty-state" class="empty hidden">Aucune prise enregistrée pour le moment. La première entrée du carnet t'attend ci-dessus.</p>
+      <div id="ledger-list" class="ledger__list"></div>
+      <p id="empty-state" class="empty hidden">
+        <i class="ph ph-fish-simple" aria-hidden="true"></i>
+        <span>Aucune prise enregistrée pour le moment. Ajoute la première avec le formulaire ci-dessus.</span>
+      </p>
     </section>
 
   </section>
 
-  <div id="loading" class="loading hidden">Synchronisation avec GitHub…</div>
+  <div id="loading" class="loading hidden" role="status">Synchronisation avec GitHub…</div>
 
 </main>
 
 <div id="lightbox-overlay" class="modal-overlay hidden">
   <div class="lightbox-content">
-    <button id="lightbox-close" class="icon-btn lightbox-close" aria-label="Fermer">✕</button>
+    <button id="lightbox-close" class="icon-btn lightbox-close" aria-label="Fermer"><i class="ph ph-x"></i></button>
     <img id="lightbox-img" src="" alt="Photo de la prise en grand">
   </div>
 </div>
@@ -176,8 +180,8 @@
       </label>
       <p class="hint">Laisse les deux champs vides pour exporter toutes les prises.</p>
       <div class="form-actions">
-        <button type="submit" class="btn btn--primary">Générer le PDF</button>
-        <button type="button" class="btn btn--ghost" id="btn-export-cancel">Annuler</button>
+        <button type="submit" class="btn btn--primary">Exporter en PDF</button>
+        <button type="button" class="btn btn--secondary" id="btn-export-cancel">Annuler</button>
       </div>
     </form>
   </div>

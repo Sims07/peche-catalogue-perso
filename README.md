@@ -54,6 +54,17 @@ L'application est une PWA (Progressive Web App) : sur iPhone, tu peux l'ajouter 
 
 ## Changelog
 
+### v1.9.0 — 2026-10-10
+- Refonte visuelle complète inspirée du design system Linear : thème sombre unique (fond `#010102`, échelle de surfaces, bordures fines), accent lavande `#5e6ad2` réservé à la marque, au bouton principal et au focus, typographie SF Pro / Inter, coins 8 px (boutons, champs), 12 px (cartes), pastilles arrondies pour les états.
+- Barre de navigation fixe de 56 px. Les prises s'affichent dans une liste à lignes séparées par des filets, avec poids et taille alignés à droite.
+- Les emojis et symboles texte sont remplacés par des icônes Phosphor (chargées depuis un CDN, une seule famille, un seul style).
+- Cartes Leaflet : tuiles assombries pour s'accorder au thème, contrôles et bulles restylés, et isolation de leurs z-index pour qu'elles ne passent plus jamais au-dessus de la navigation ou des fenêtres.
+- Chargement : lignes de squelette pendant la première lecture sur GitHub. Messages d'erreur dans un bandeau neutre avec icône.
+- Export PDF : même langage visuel (pages blanches, filets gris, icône de marque), sans polices à empattement ni emojis. Le thème clair reste forcé à l'impression.
+- Accessibilité : champs à 16 px minimum (pas de zoom iOS), contrastes AA vérifiés, anneau de focus visible, mouvement réduit respecté.
+- Textes : suppression des tirets longs et des points médians dans l'interface. `CACHE_NAME` passé à `carnet-peche-v7`.
+- À mettre à jour à la main dans `manifest.json` : `theme_color` et `background_color` à `#010102`.
+
 ### v1.8.2 — 2026-09-15
 - Correction : sur iPhone (iOS en mode sombre), l'export imprimé/PDF pouvait s'afficher avec un fond noir au lieu du fond papier. En cause : le moteur de rendu d'impression d'iOS applique parfois son propre habillage sombre si la page ne précise pas explicitement qu'elle gère ses couleurs elle-même. Le thème clair est désormais forcé (`color-scheme: light`) sur toute la page et renforcé sur les éléments imprimés.
 

@@ -1,4 +1,4 @@
-// Carnet de pêche — logique de l'application
+// Carnet de pêche - logique de l'application
 // Les données (JSON) sont lues/écrites directement dans le dépôt GitHub via
 // l'API Git Data (blobs/trees/commits), ce qui évite la limite de 1 Mo de
 // l'API "contents" simple et permet d'accumuler des photos sans problème.
@@ -201,9 +201,8 @@ function compressImage(file, maxDim = 900, quality = 0.65) {
 function $(id) { return document.getElementById(id); }
 
 function showError(msg) {
-  const el = $('banner-error');
-  el.textContent = msg;
-  el.classList.remove('hidden');
+  $('banner-error-text').textContent = msg;
+  $('banner-error').classList.remove('hidden');
 }
 function clearError() {
   $('banner-error').classList.add('hidden');
@@ -213,19 +212,32 @@ function setLoading(on) {
   $('loading').classList.toggle('hidden', !on);
 }
 
+// Status line under the photo field (optionally prefixed with a map-pin icon).
+function setGpsStatus(text, withIcon = false) {
+  const el = $('gps-status');
+  el.textContent = '';
+  if (withIcon) {
+    const icon = document.createElement('i');
+    icon.className = 'ph ph-map-pin';
+    icon.setAttribute('aria-hidden', 'true');
+    el.appendChild(icon);
+  }
+  if (text) el.appendChild(document.createTextNode(text));
+}
+
 function renderStats() {
   const total = catches.length;
   const withWeight = catches.filter(c => c.poids_kg != null);
   const biggest = withWeight.length
     ? Math.max(...withWeight.map(c => c.poids_kg)).toFixed(2)
-    : '—';
+    : '-';
   const lastDate = catches.length
-    ? [...catches].sort((a, b) => b.date.localeCompare(a.date))[0].date
-    : '—';
+    ? formatDate([...catches].sort((a, b) => b.date.localeCompare(a.date))[0].date)
+    : '-';
 
   $('stats').innerHTML = `
     <div class="stat"><span class="stat__value">${total}</span><span class="stat__label">prise${total > 1 ? 's' : ''} au total</span></div>
-    <div class="stat"><span class="stat__value">${biggest}${biggest !== '—' ? ' kg' : ''}</span><span class="stat__label">plus grosse prise</span></div>
+    <div class="stat"><span class="stat__value">${biggest}${biggest !== '-' ? ' kg' : ''}</span><span class="stat__label">plus grosse prise</span></div>
     <div class="stat"><span class="stat__value">${lastDate}</span><span class="stat__label">dernière sortie</span></div>
   `;
 }
@@ -254,6 +266,20 @@ function escapeHtml(str) {
   }[c]));
 }
 
+// Placeholder rows shown while the first read from GitHub is in flight.
+function renderLedgerSkeleton() {
+  $('empty-state').classList.add('hidden');
+  $('ledger-list').innerHTML = [0, 1, 2].map(() => `
+    <div class="entry entry--skeleton" aria-hidden="true">
+      <div class="skeleton skeleton--thumb"></div>
+      <div class="entry__main">
+        <div class="skeleton skeleton--line"></div>
+        <div class="skeleton skeleton--line skeleton--short"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
 function renderLedger() {
   const lieuFilter = $('filter-lieu').value;
   const especeFilter = $('filter-espece').value;
@@ -268,14 +294,22 @@ function renderLedger() {
     <div class="entry" data-id="${c.id}">
       ${c.photo
         ? `<img class="entry__thumb" src="${c.photo}" alt="Photo de la prise">`
-        : `<div class="entry__thumb entry__thumb--empty">🎣</div>`}
+        : `<div class="entry__thumb entry__thumb--empty"><i class="ph ph-fish-simple" aria-hidden="true"></i></div>`}
       <div class="entry__main">
-        <div class="entry__title">${escapeHtml(c.espece || 'Poisson')}${c.poids_kg != null ? ` · ${c.poids_kg} kg` : ''}${c.taille_cm != null ? ` · ${c.taille_cm} cm` : ''}</div>
-        <div class="entry__meta">${formatDate(c.date)}${c.lieu ? ' · ' + escapeHtml(c.lieu) : ''}${c.gps ? ' · 📍 GPS' : ''}</div>
+        <div class="entry__title">${escapeHtml(c.espece || 'Poisson')}</div>
+        <div class="entry__meta">
+          <span>${formatDate(c.date)}</span>
+          ${c.lieu ? `<span>${escapeHtml(c.lieu)}</span>` : ''}
+          ${c.gps ? `<span class="entry__gps"><i class="ph ph-map-pin" aria-hidden="true"></i>GPS</span>` : ''}
+        </div>
         ${c.notes ? `<div class="entry__notes">${escapeHtml(c.notes)}</div>` : ''}
       </div>
-      <div class="entry__actions">
-        <button data-action="delete" title="Supprimer">✕</button>
+      <div class="entry__side">
+        <div class="entry__values">
+          ${c.poids_kg != null ? `<span>${c.poids_kg} kg</span>` : ''}
+          ${c.taille_cm != null ? `<span>${c.taille_cm} cm</span>` : ''}
+        </div>
+        <button class="entry__delete" data-action="delete" title="Supprimer" aria-label="Supprimer la prise"><i class="ph ph-trash"></i></button>
       </div>
     </div>
   `).join('');
@@ -349,7 +383,7 @@ function renderCatchesMap() {
   const bounds = [];
   withGps.forEach(c => {
     const marker = L.marker([c.gps.lat, c.gps.lon]);
-    marker.bindPopup(`<strong>${escapeHtml(c.espece || 'Poisson')}</strong><br>${formatDate(c.date)}${c.lieu ? ' · ' + escapeHtml(c.lieu) : ''}`);
+    marker.bindPopup(`<strong>${escapeHtml(c.espece || 'Poisson')}</strong><br>${formatDate(c.date)}${c.lieu ? ', ' + escapeHtml(c.lieu) : ''}`);
     marker.addTo(catchesMarkersLayer);
     bounds.push([c.gps.lat, c.gps.lon]);
   });
@@ -381,15 +415,15 @@ function enterEditMode(entry) {
   if (pendingPhoto) {
     const img = document.createElement('img');
     img.src = pendingPhoto;
+    img.alt = 'Aperçu de la photo';
     wrap.appendChild(img);
   }
 
-  const status = $('gps-status');
   if (pendingGPS) {
-    status.textContent = `📍 Position GPS enregistrée : ${pendingGPS.lat.toFixed(5)}, ${pendingGPS.lon.toFixed(5)}`;
+    setGpsStatus(`Position GPS enregistrée : ${pendingGPS.lat.toFixed(5)}, ${pendingGPS.lon.toFixed(5)}`, true);
     showFormMap(pendingGPS.lat, pendingGPS.lon);
   } else {
-    status.textContent = pendingPhoto ? "Aucune position GPS pour cette photo." : '';
+    setGpsStatus(pendingPhoto ? "Aucune position GPS pour cette photo." : '');
     hideFormMap();
   }
 
@@ -408,7 +442,7 @@ function exitEditMode() {
   $('f-date').valueAsDate = new Date();
   $('f-espece').value = 'Carpe';
   $('photo-preview-wrap').innerHTML = '';
-  $('gps-status').textContent = '';
+  setGpsStatus('');
   hideFormMap();
   $('entry-form-title').textContent = 'Nouvelle prise';
   $('edit-hint').classList.add('hidden');
@@ -434,12 +468,14 @@ async function init() {
 async function reload() {
   clearError();
   setLoading(true);
+  renderLedgerSkeleton();
   try {
     catches = await fetchCatches();
     renderAll();
   } catch (err) {
     console.error(err);
-    showError("Impossible de lire les données sur GitHub. Vérifie la configuration (⚙) et le jeton. Détail : " + err.message);
+    $('ledger-list').innerHTML = '';
+    showError("Impossible de lire les données sur GitHub. Vérifie la configuration (icône réglages) et le jeton. Détail : " + err.message);
   } finally {
     setLoading(false);
   }
@@ -478,9 +514,8 @@ $('btn-settings').addEventListener('click', () => {
 $('f-photo').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   const wrap = $('photo-preview-wrap');
-  const status = $('gps-status');
   wrap.innerHTML = '';
-  status.textContent = '';
+  setGpsStatus('');
   pendingGPS = null;
   hideFormMap();
   if (!file) { pendingPhoto = null; return; }
@@ -488,14 +523,15 @@ $('f-photo').addEventListener('change', async (e) => {
     pendingPhoto = await compressImage(file);
     const img = document.createElement('img');
     img.src = pendingPhoto;
+    img.alt = 'Aperçu de la photo';
     wrap.appendChild(img);
 
     pendingGPS = await extractGPS(file);
     if (pendingGPS) {
-      status.textContent = `📍 Position GPS détectée : ${pendingGPS.lat.toFixed(5)}, ${pendingGPS.lon.toFixed(5)}`;
+      setGpsStatus(`Position GPS détectée : ${pendingGPS.lat.toFixed(5)}, ${pendingGPS.lon.toFixed(5)}`, true);
       showFormMap(pendingGPS.lat, pendingGPS.lon);
     } else {
-      status.textContent = "Aucune position GPS trouvée dans cette photo.";
+      setGpsStatus("Aucune position GPS trouvée dans cette photo.");
     }
   } catch (err) {
     showError("Impossible de traiter la photo : " + err.message);
@@ -570,7 +606,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('lightbox-overlay').classList.contains('hidden')) closeLightbox();
 });
 
-// Click on a ledger row: view photo, delete (✕ button), or select for editing
+// Click on a ledger row: view photo, delete (trash button), or select for editing
 $('ledger-list').addEventListener('click', async (e) => {
   const photoThumb = e.target.closest('img.entry__thumb');
   if (photoThumb) {
@@ -579,7 +615,7 @@ $('ledger-list').addEventListener('click', async (e) => {
   }
 
   const entryEl = e.target.closest('.entry');
-  if (!entryEl) return;
+  if (!entryEl || !entryEl.dataset.id) return;
   const id = entryEl.dataset.id;
   const entry = catches.find(c => c.id === id);
   if (!entry) return;
@@ -642,23 +678,24 @@ function generatePrintBook(from, to) {
   const biggest = withWeight.length ? Math.max(...withWeight.map(c => c.poids_kg)).toFixed(2) : null;
 
   const runningHead = (right) => `
-    <div class="print-running-head"><span>🎣 Carnet de pêche</span><span>${right}</span></div>
+    <div class="print-running-head"><span><i class="ph ph-fish" aria-hidden="true"></i>Carnet de pêche</span><span>${right}</span></div>
   `;
 
   const coverHtml = `
     <section class="print-page print-cover">
-      ${runningHead(periodLabel)}
-      <div class="print-cover__mark">🐟</div>
+      ${runningHead(escapeHtml(periodLabel))}
+      <div class="print-cover__mark"><i class="ph ph-fish" aria-hidden="true"></i></div>
       <h1>Carnet de pêche</h1>
       <p class="print-period">${escapeHtml(periodLabel)}</p>
       <div class="print-cover__rule"></div>
-      <p class="print-stats">${filtered.length} prise${filtered.length > 1 ? 's' : ''}${biggest ? ` · plus grosse prise : ${biggest} kg` : ''}</p>
+      <p class="print-stats">${filtered.length} prise${filtered.length > 1 ? 's' : ''}</p>
+      ${biggest ? `<p class="print-stats">Plus grosse prise : ${biggest} kg</p>` : ''}
     </section>
   `;
 
   const friezeHtml = `
     <section class="print-page print-frieze">
-      ${runningHead('Frise chronologique')}
+      ${runningHead('Vue d\'ensemble')}
       <h2>En un coup d'œil</h2>
       <p class="print-frieze__intro">Toutes les prises de la période, dans l'ordre</p>
       <div class="print-frieze__grid">
@@ -666,7 +703,7 @@ function generatePrintBook(from, to) {
           <div class="print-frieze__item">
             ${c.photo
               ? `<img class="print-frieze__thumb" src="${c.photo}" alt="">`
-              : `<div class="print-frieze__thumb--empty">🎣</div>`}
+              : `<div class="print-frieze__thumb--empty"><i class="ph ph-fish-simple" aria-hidden="true"></i></div>`}
             <div class="print-frieze__date">${formatDate(c.date)}</div>
             <div class="print-frieze__espece">${escapeHtml(c.espece || '')}</div>
           </div>

@@ -6,7 +6,7 @@
 // IMPORTANT: bump CACHE_NAME every time you deploy a change to index.html,
 // style.css, app.js or the icons — otherwise an already-installed iPhone
 // icon may keep showing the old cached version for a while.
-const CACHE_NAME = 'carnet-peche-v6';
+const CACHE_NAME = 'carnet-peche-v7';
 
 const APP_SHELL = [
   './',
@@ -39,8 +39,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Only handle same-origin GET requests (the app shell). Everything else
-  // (GitHub API, Leaflet/exif-js from cdnjs, Google Fonts, map tiles) goes
-  // straight to the network as usual.
+  // (GitHub API, Leaflet/exif-js from cdnjs, Google Fonts, Phosphor icons,
+  // map tiles) goes straight to the network as usual.
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) {
     return;
   }
