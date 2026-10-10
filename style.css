@@ -190,6 +190,22 @@ form input, form select{
 }
 .card form input, .card form select{ background: var(--canvas); }
 form input::placeholder{ color: var(--ink-subtle); opacity: 1; }
+/* iOS Safari : le champ date garde une largeur intrinsèque et déborde de son cadre.
+   On retire l'apparence native et on force la largeur ; la valeur reste alignée à gauche. */
+input[type="date"]{
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+}
+input[type="date"]::-webkit-date-and-time-value{
+  text-align: left;
+  min-height: 1.5em;
+}
+input[type="date"]::-webkit-calendar-picker-indicator{ opacity: .7; }
 input[type="file"]{ padding: 6px; font-size: .875rem; color: var(--ink-muted); }
 input[type="file"]::file-selector-button{
   font-family: var(--font);
@@ -228,10 +244,11 @@ form input:focus-visible, form select:focus-visible{
 
 .grid{
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0 16px;
   min-width: 0;
 }
+.grid > label{ min-width: 0; }
 .span-2{ grid-column: span 2; min-width: 0; }
 
 #photo-preview-wrap img{
@@ -567,7 +584,7 @@ form input:focus-visible, form select:focus-visible{
 @media (max-width: 520px){
   .app{ padding: 16px 12px 72px; }
   .card, .setup__card{ padding: 20px 16px; }
-  .grid{ grid-template-columns: 1fr; }
+  .grid{ grid-template-columns: minmax(0, 1fr); }
   .span-2{ grid-column: span 1; }
   .stat{ padding: 14px 10px; }
   .stat__value{ font-size: 1.0625rem; }

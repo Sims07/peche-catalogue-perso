@@ -54,6 +54,9 @@ L'application est une PWA (Progressive Web App) : sur iPhone, tu peux l'ajouter 
 
 ## Changelog
 
+### v1.10.1 — 2026-10-10
+- Correction : sur iPhone, le champ date du formulaire (et ceux de l'export) dépassait de son cadre. Le champ est désormais forcé à la largeur disponible et les colonnes du formulaire peuvent rétrécir. `CACHE_NAME` passé à `carnet-peche-v9`.
+
 ### v1.10.0 — 2026-10-10
 - Nouveau bandeau « Une nouvelle version est disponible » avec un bouton **Mettre à jour**, affiché sous la barre de navigation quand une version plus récente du site est détectée. Un appui installe la nouvelle version et recharge l'appli.
 - La vérification se fait au lancement, quand l'appli revient au premier plan, puis toutes les heures. Si un formulaire est en cours de saisie, une confirmation est demandée avant le rechargement.
